@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo Manager</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --yellow:       #F5C518;
+      --yellow-dark:  #D4A900;
+      --yellow-light: #FFF8DC;
+      --yellow-pale:  #FFFBEA;
+      --black:        #0D0D0D;
+      --black-2:      #1A1A1A;
+      --black-3:      #2A2A2A;
+      --blue:         #1E6FDB;
+      --blue-dark:    #155BBF;
+      --blue-light:   #E8F1FC;
+      --white:        #FFFFFF;
+      --gray-1:       #F7F7F7;
+      --gray-2:       #EFEFEF;
+      --gray-3:       #D4D4D4;
+      --gray-4:       #9A9A9A;
+      --gray-5:       #555555;
+      --text:         #0D0D0D;
+      --text-muted:   #6B6B6B;
+      --sidebar-w:    260px;
+      --radius:       10px;
+      --radius-sm:    6px;
+      --shadow:       0 2px 12px rgba(0,0,0,0.08);
+      --shadow-card:  0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-1);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--black-2);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+
+    .sidebar-brand {
+      padding: 24px 22px 20px;
+      border-bottom: 1px solid var(--black-3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--yellow);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: var(--black);
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.3px;
+    }
+    .brand-tag {
+      font-size: 10px;
+      color: var(--gray-4);
+      margin-top: 1px;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-section {
+      padding: 20px 12px 8px;
+    }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--gray-4);
+      padding: 0 10px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--gray-4);
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+      margin-bottom: 2px;
+    }
+    .nav-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .nav-item:hover { background: var(--black-3); color: var(--white); }
+    .nav-item.active {
+      background: var(--yellow);
+      color: var(--black);
+    }
+    .nav-item.active i { color: var(--black); }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--black-3);
+      color: var(--gray-4);
+      font-size: 11px;
+      font-weight: 600;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 6px;
+    }
+    .nav-item.active .nav-badge {
+      background: rgba(0,0,0,0.2);
+      color: var(--black);
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 16px 12px;
+      border-top: 1px solid var(--black-3);
+    }
+    .user-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+    }
+    .user-avatar {
+      width: 32px; height: 32px;
+      background: var(--yellow);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--black);
+      flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-role { font-size: 11px; color: var(--gray-4); }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-2);
+      padding: 0 32px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-left h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--black);
+    }
+    .topbar-left p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .topbar-right {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .api-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--gray-1);
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--gray-2);
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--gray-3);
+    }
+    .status-dot.online { background: #22c55e; }
+    .status-dot.offline { background: #ef4444; }
+
+    /* ── CONTENT ── */
+    .content { padding: 28px 32px; flex: 1; }
+
+    /* ── STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--gray-2);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-card);
+    }
+    .stat-icon {
+      width: 46px; height: 46px;
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .stat-icon.total   { background: var(--yellow-light); color: var(--yellow-dark); }
+    .stat-icon.done    { background: #DCFCE7; color: #16A34A; }
+    .stat-icon.pending { background: var(--blue-light);   color: var(--blue); }
+    .stat-val { font-size: 28px; font-weight: 800; color: var(--black); line-height: 1; }
+    .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+    .stat-bar { height: 3px; background: var(--gray-2); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .stat-bar-fill.y { background: var(--yellow); }
+    .stat-bar-fill.g { background: #22c55e; }
+    .stat-bar-fill.b { background: var(--blue); }
+
+    /* ── ADD TASK ── */
+    .add-task-card {
+      background: var(--white);
+      border: 1px solid var(--gray-2);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .add-task-card h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--black);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .add-task-card h2 i { color: var(--yellow-dark); }
+    .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .form-col { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 12px; font-weight: 600; color: var(--gray-5); }
+    input[type="text"], textarea {
+      border: 1.5px solid var(--gray-2);
+      border-radius: var(--radius-sm);
+      padding: 9px 13px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+      outline: none;
+      resize: none;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 3px rgba(245,197,24,0.15);
+    }
+    textarea { height: 66px; }
+    .btn-add {
+      background: var(--yellow);
+      color: var(--black);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 22px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+    .btn-add:hover { background: var(--yellow-dark); }
+    .btn-add:active { transform: scale(0.97); }
+
+    /* ── TASK LIST ── */
+    .tasklist-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .tasklist-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--black);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .task-count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--yellow-light);
+      color: var(--yellow-dark);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .btn-refresh {
+      background: none;
+      border: 1.5px solid var(--gray-2);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-refresh:hover { border-color: var(--yellow); color: var(--black); }
+
+    /* ── TASK CARDS ── */
+    #task-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .task-card {
+      background: var(--white);
+      border: 1px solid var(--gray-2);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      box-shadow: var(--shadow-card);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      animation: fadeIn 0.2s ease;
+    }
+    .task-card:hover { border-color: var(--gray-3); box-shadow: var(--shadow); }
+    .task-card.done  { background: var(--gray-1); border-color: var(--gray-2); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-check {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--gray-3);
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      color: transparent;
+      transition: all 0.15s;
+      margin-top: 1px;
+    }
+    .task-check:hover { border-color: var(--yellow); }
+    .task-check.checked {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: var(--black);
+    }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--black);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .task-card.done .task-title {
+      text-decoration: line-through;
+      color: var(--gray-4);
+    }
+    .task-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .task-card.done .task-desc { color: var(--gray-3); }
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .task-date {
+      font-size: 11px;
+      color: var(--gray-4);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .task-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .badge-pending  { background: var(--blue-light); color: var(--blue); }
+    .badge-done     { background: #DCFCE7; color: #16A34A; }
+
+    .task-actions {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .btn-icon {
+      width: 30px; height: 30px;
+      border: 1.5px solid var(--gray-2);
+      border-radius: var(--radius-sm);
+      background: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .btn-icon:hover { border-color: var(--gray-3); color: var(--black); }
+    .btn-icon.delete:hover { border-color: #f87171; background: #FEF2F2; color: #dc2626; }
+
+    /* empty / loading / error */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state i { font-size: 40px; color: var(--gray-3); margin-bottom: 12px; display: block; }
+    .empty-state h3 { font-size: 15px; font-weight: 600; color: var(--gray-5); margin-bottom: 6px; }
+    .empty-state p  { font-size: 13px; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--black-2);
+      color: var(--white);
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 999;
+      display: flex; align-items: center; gap: 8px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.25s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success i { color: #4ade80; }
+    .toast.error   i { color: #f87171; }
+
+    .loading-spinner {
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--gray-2);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      color: #DC2626;
+      font-size: 13px;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">&#10003;</div>
+    <div>
+      <div class="brand-name">TodoManager</div>
+      <div class="brand-tag">TASK DASHBOARD</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Views</div>
+    <div class="nav-item active" data-filter="all" onclick="setFilter(this,'all')">
+      <i class="fa-solid fa-layer-group"></i> All Tasks
+      <span class="nav-badge" id="badge-all">0</span>
+    </div>
+    <div class="nav-item" data-filter="today" onclick="setFilter(this,'today')">
+      <i class="fa-solid fa-calendar-day"></i> Today
+      <span class="nav-badge" id="badge-today">0</span>
+    </div>
+    <div class="nav-item" data-filter="completed" onclick="setFilter(this,'completed')">
+      <i class="fa-solid fa-circle-check"></i> Completed
+      <span class="nav-badge" id="badge-completed">0</span>
+    </div>
+    <div class="nav-item" data-filter="pending" onclick="setFilter(this,'pending')">
+      <i class="fa-solid fa-hourglass-half"></i> Pending
+      <span class="nav-badge" id="badge-pending">0</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section" style="margin-top: auto; padding-top: 12px;">
+    <div class="sidebar-label">Quick Stats</div>
+    <div style="padding: 10px; background: rgba(255,255,255,0.04); border-radius: var(--radius-sm);">
+      <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+        <span style="font-size:12px; color:var(--gray-4);">Progress</span>
+        <span style="font-size:12px; font-weight:700; color:var(--yellow);" id="progress-pct">0%</span>
+      </div>
+      <div style="height:4px; background:var(--black-3); border-radius:2px; overflow:hidden;">
+        <div id="sidebar-bar" style="height:100%; background:var(--yellow); border-radius:2px; width:0%; transition:width 0.4s;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar">SK</div>
+      <div>
+        <div class="user-name">Subhankar</div>
+        <div class="user-role">Developer</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 id="view-title">All Tasks</h1>
+      <p id="view-subtitle">Manage and track your tasks</p>
+    </div>
+    <div class="topbar-right">
+      <div class="api-status">
+        <span class="status-dot" id="api-dot"></span>
+        <span id="api-label">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon total"><i class="fa-solid fa-list-check"></i></div>
+        <div style="flex:1">
+          <div class="stat-val" id="s-total">0</div>
+          <div class="stat-lbl">Total Tasks</div>
+          <div class="stat-bar"><div class="stat-bar-fill y" id="bar-total" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon done"><i class="fa-solid fa-circle-check"></i></div>
+        <div style="flex:1">
+          <div class="stat-val" id="s-done">0</div>
+          <div class="stat-lbl">Completed</div>
+          <div class="stat-bar"><div class="stat-bar-fill g" id="bar-done" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pending"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div style="flex:1">
+          <div class="stat-val" id="s-pending">0</div>
+          <div class="stat-lbl">Pending</div>
+          <div class="stat-bar"><div class="stat-bar-fill b" id="bar-pending" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Task -->
+    <div class="add-task-card">
+      <h2><i class="fa-solid fa-plus"></i> Add New Task</h2>
+      <div id="form-error" style="display:none" class="error-banner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span id="form-error-msg">Could not connect to backend.</span>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-group">
+            <label for="task-title">Title <span style="color:#ef4444">*</span></label>
+            <input type="text" id="task-title" placeholder="What needs to be done?" maxlength="255" />
+          </div>
+          <div class="form-group">
+            <label for="task-desc">Description</label>
+            <textarea id="task-desc" placeholder="Add details (optional)…"></textarea>
+          </div>
+        </div>
+        <button class="btn-add" onclick="createTask()">
+          <i class="fa-solid fa-plus"></i> Add Task
+        </button>
+      </div>
+    </div>
+
+    <!-- Task List -->
+    <div class="tasklist-header">
+      <h2>
+        <i class="fa-solid fa-tasks" style="color:var(--blue)"></i>
+        <span id="list-heading">Tasks</span>
+        <span class="task-count-badge" id="list-count">0</span>
+      </h2>
+      <button class="btn-refresh" onclick="loadAll()">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+
+    <div id="task-list"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i class="fa-solid fa-circle-check" id="toast-icon"></i>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+  let allTasks = [];
+  let currentFilter = 'all';
+
+  // ── UTILS ──
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    const ic = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    t.className = `toast show ${type}`;
+    ic.className = type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation';
+    clearTimeout(t._to);
+    t._to = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function isToday(iso) {
+    const d = new Date(iso);
+    const n = new Date();
+    return d.getDate() === n.getDate() && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }
+
+  // ── API STATUS ──
+  async function checkAPI() {
+    const dot = document.getElementById('api-dot');
+    const lbl = document.getElementById('api-label');
+    try {
+      const r = await fetch(`${API}/`);
+      if (r.ok) {
+        dot.className = 'status-dot online';
+        lbl.textContent = 'API Connected';
+      } else throw new Error();
+    } catch {
+      dot.className = 'status-dot offline';
+      lbl.textContent = 'API Offline';
+    }
+  }
+
+  // ── LOAD TASKS ──
+  async function loadAll() {
+    const listEl = document.getElementById('task-list');
+    listEl.innerHTML = `<div class="loading-spinner"><div class="spinner"></div> Loading tasks…</div>`;
+    try {
+      const [tasksRes, statsRes] = await Promise.all([
+        fetch(`${API}/tasks`),
+        fetch(`${API}/tasks/stats`)
+      ]);
+      if (!tasksRes.ok || !statsRes.ok) throw new Error('API error');
+      allTasks = await tasksRes.json();
+      const stats = await statsRes.json();
+      updateStats(stats);
+      renderTasks();
+      updateBadges();
+    } catch (e) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-plug-circle-xmark"></i>
+          <h3>Cannot reach the backend</h3>
+          <p>Make sure <code>uvicorn main:app --reload</code> is running on port 8000 and your <code>.env</code> has a valid <code>DATABASE_URL</code>.</p>
+        </div>`;
+      document.getElementById('api-dot').className = 'status-dot offline';
+      document.getElementById('api-label').textContent = 'API Offline';
+    }
+  }
+
+  // ── STATS ──
+  function updateStats(stats) {
+    document.getElementById('s-total').textContent   = stats.total;
+    document.getElementById('s-done').textContent    = stats.completed;
+    document.getElementById('s-pending').textContent = stats.pending;
+    const pct = stats.total ? Math.round(stats.completed / stats.total * 100) : 0;
+    document.getElementById('bar-done').style.width    = pct + '%';
+    document.getElementById('bar-pending').style.width = (100 - pct) + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('sidebar-bar').style.width  = pct + '%';
+  }
+
+  function updateBadges() {
+    const today     = allTasks.filter(t => isToday(t.created_at));
+    const completed = allTasks.filter(t => t.completed);
+    const pending   = allTasks.filter(t => !t.completed);
+    document.getElementById('badge-all').textContent       = allTasks.length;
+    document.getElementById('badge-today').textContent     = today.length;
+    document.getElementById('badge-completed').textContent = completed.length;
+    document.getElementById('badge-pending').textContent   = pending.length;
+  }
+
+  // ── FILTER ──
+  function setFilter(el, f) {
+    currentFilter = f;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    const titles = { all:'All Tasks', today:'Today\'s Tasks', completed:'Completed Tasks', pending:'Pending Tasks' };
+    const subs   = { all:'Manage and track your tasks', today:'Tasks created today', completed:'Your finished tasks', pending:'Tasks still in progress' };
+    document.getElementById('view-title').textContent    = titles[f];
+    document.getElementById('view-subtitle').textContent = subs[f];
+    document.getElementById('list-heading').textContent  = titles[f];
+    renderTasks();
+  }
+
+  // ── RENDER ──
+  function renderTasks() {
+    const listEl = document.getElementById('task-list');
+    let tasks = [...allTasks];
+    if (currentFilter === 'today')     tasks = tasks.filter(t => isToday(t.created_at));
+    if (currentFilter === 'completed') tasks = tasks.filter(t => t.completed);
+    if (currentFilter === 'pending')   tasks = tasks.filter(t => !t.completed);
+
+    document.getElementById('list-count').textContent = tasks.length;
+
+    if (!tasks.length) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <h3>No tasks here</h3>
+          <p>Add your first task above to get started.</p>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = tasks.map(task => `
+      <div class="task-card ${task.completed ? 'done' : ''}" id="task-${task.id}">
+        <div class="task-check ${task.completed ? 'checked' : ''}" onclick="toggleTask(${task.id}, ${!task.completed})" title="${task.completed ? 'Mark as pending' : 'Mark as done'}">
+          ${task.completed ? '<i class="fa-solid fa-check"></i>' : ''}
+        </div>
+        <div class="task-body">
+          <div class="task-title">${escHtml(task.title)}</div>
+          ${task.description ? `<div class="task-desc">${escHtml(task.description)}</div>` : ''}
+          <div class="task-meta">
+            <span class="task-date"><i class="fa-regular fa-calendar"></i> ${formatDate(task.created_at)}</span>
+            <span class="task-badge ${task.completed ? 'badge-done' : 'badge-pending'}">
+              ${task.completed ? 'Completed' : 'Pending'}
+            </span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="btn-icon delete" onclick="deleteTask(${task.id})" title="Delete task">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── CREATE ──
+  async function createTask() {
+    const title = document.getElementById('task-title').value.trim();
+    const desc  = document.getElementById('task-desc').value.trim();
+    const errEl = document.getElementById('form-error');
+    errEl.style.display = 'none';
+
+    if (!title) {
+      document.getElementById('task-title').focus();
+      showToast('Please enter a task title', 'error');
+      return;
+    }
+
+    try {
+      const r = await fetch(`${API}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description: desc || null })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-desc').value  = '';
+      showToast('Task added successfully');
+      await loadAll();
+    } catch (e) {
+      errEl.style.display = 'flex';
+      document.getElementById('form-error-msg').textContent = 'Could not create task. Is the backend running?';
+      showToast('Failed to add task', 'error');
+    }
+  }
+
+  // ── TOGGLE ──
+  async function toggleTask(id, completed) {
+    try {
+      const r = await fetch(`${API}/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+      if (!r.ok) throw new Error();
+      showToast(completed ? 'Task completed! 🎉' : 'Task marked as pending');
+      await loadAll();
+    } catch {
+      showToast('Failed to update task', 'error');
+    }
+  }
+
+  // ── DELETE ──
+  async function deleteTask(id) {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    try {
+      const r = await fetch(`${API}/tasks/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error();
+      showToast('Task deleted');
+      await loadAll();
+    } catch {
+      showToast('Failed to delete task', 'error');
+    }
+  }
+
+  // Enter key on title
+  document.getElementById('task-title').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createTask();
+  });
+
+  // ── INIT ──
+  checkAPI();
+  loadAll();
+  setInterval(checkAPI, 30000);
+</script>
+</body>
+</html>
